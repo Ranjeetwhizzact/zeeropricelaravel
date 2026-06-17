@@ -27,7 +27,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
             return redirect()->intended('/'); // redirect after login
         }
-        
+
 
         return back()->withErrors([
             'phone' => 'Invalid login credentials.',
@@ -45,21 +45,21 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'phone' => 'required|string|max:15|unique:users,phone',
+            'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:6|confirmed'
         ]);
 
-        // Create user
         $user = User::create([
             'name' => $request->name,
+            'phone' => $request->phone,
             'email' => $request->email,
             'password' => Hash::make($request->password)
         ]);
 
-        // Login after registration
         Auth::login($user);
 
-        return redirect('/home');
+        return redirect('/login');
     }
 
     // Logout

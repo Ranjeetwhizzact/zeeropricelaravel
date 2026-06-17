@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     //
-     protected $table = "products";
+    protected $table = "products";
     protected $primaryKey = "pid";
 
     protected $fillable = [
@@ -45,5 +45,10 @@ class Product extends Model
     public function subcategory()
     {
         return $this->belongsTo(SubCategory::class, 'subcatid', 'id');
+    }
+
+    public function advertisements()
+    {
+        return $this->hasMany(Advertisement::class, 'product_id');
     }
 }

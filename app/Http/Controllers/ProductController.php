@@ -150,7 +150,6 @@ class ProductController extends Controller
     {
         return SubCategory::where('catid', $id)->get();
     }
-
     public function productdetail(Request $request, $id)
     {
         $product = Product::where('pid', $id)->first();
@@ -165,23 +164,66 @@ class ProductController extends Controller
         $user = Auth::user(); // ✅ correct way
         $freepoint = Freepoints::where('userid', $user?->id)->first();
         $userpoint = $user?->points ?? 0;
+        $adPoints = DB::table('pointstransaction')
+            ->where('userid', auth('web')->id())
+            ->where('source', 'ad')
+            ->sum('points');
+
+        // Fetch comments related to the advertisements of this product
+        $comments = \App\Models\AdTask::with('user')
+            ->where('task_type', 'comment')
+            ->whereHas('advertisement', function ($query) use ($id) {
+                $query->where('product_id', $id);
+            })
+            ->orderBy('task_id', 'desc')
+            ->get();
 
         if ($request->expectsJson()) {
             return response()->json([
                 'product'    => $product,
                 'freepoint'  => $freepoint,
                 'userpoint'  => $userpoint,
+                'adPoints'   => $adPoints,
+                'comments'   => $comments,
             ]);
         }
 
         return view('productdetail', compact(
             'product',
             'freepoint',
-            'userpoint'
+            'userpoint',
+            'adPoints',
+            'comments'
         ));
     }
+    public function hitSecondAPI(Request $request)
+    {
+        $user = Auth::user();
 
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not logged in'
+            ], 401);
+        }
 
+        $updated = Freepoints::where('userid', $user->id)
+            ->where('points', '>', 0)
+            ->decrement('points', 1);
+
+        if (!$updated) {
+            return response()->json([
+                'message' => 'Not enough silver coins'
+            ], 400);
+        }
+
+        // get updated value
+        $remaining = Freepoints::where('userid', $user->id)->value('points');
+
+        return response()->json([
+            'message' => 'Silver coin deducted',
+            'remaining_points' => $remaining
+        ]);
+    }
 
 
     public function productdetailApi($id)
@@ -316,5 +358,72 @@ class ProductController extends Controller
         $products = Product::where('sellerid', Auth::id())->get();
 
         return view('myproduct', compact('products'));
+    }
+
+    public function adsCoin($productId)
+    {
+        $user = auth('web')->user();
+
+        $adsPoints = DB::table('pointstransaction')
+            ->where('userid', $user->id)
+            ->where('source', 'ad')
+            ->sum('points');
+
+        if ($adsPoints <= 0) {
+            return response()->json(['message' => 'No ad coins available'], 400);
+        }
+
+        // deduct 1 coin
+        DB::table('pointstransaction')->insert([
+            'userid' => $user->id,
+            'points' => -1,
+            'source' => 'ad',
+            'created_at' => now()
+        ]);
+
+        return response()->json(['message' => 'Ad coin used']);
+    }
+
+    public function usePurpleCoin(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not logged in'
+            ], 401);
+        }
+
+        // ✅ Get total purple coins (orderid = 0)
+        $totalPoints = DB::table('pointstransaction')
+            ->where('userid', $user->id)
+            ->where('orderid', 0)
+            ->sum('points');
+
+        if ($totalPoints <= 0) {
+            return response()->json([
+                'message' => 'Not enough purple coins'
+            ], 400);
+        }
+        $product = Product::findOrFail($request->product_id);
+
+        // ✅ Deduct 1 coin by inserting negative entry
+        DB::table('pointstransaction')->insert([
+            'userid'   => $user->id,
+            'pid' => $request->product_id,
+            'sellerid' => $product->sellerid,
+            'mrp'      => $product->mrp,
+            'reducedprice' => $product->reducedPrice,
+            'points'   => -1,
+            'orderid'  => 0,
+            'source'   => 'ad',
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        return response()->json([
+            'message' => 'Purple coin deducted',
+            'remaining_points' => $totalPoints - 1
+        ]);
     }
 }

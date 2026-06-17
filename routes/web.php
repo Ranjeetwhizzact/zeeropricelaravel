@@ -14,8 +14,7 @@ use App\Http\Controllers\TransactionsController;
 use App\Http\Controllers\GoldCoinController;
 use App\Http\Controllers\CashfreeController;
 use App\Http\Controllers\Admin\AdminAuthController;
-
-
+use App\Http\Controllers\Admin\AdvertisementController;
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'authenticate'])->name('login.submit');
@@ -44,15 +43,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/productsdelete/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
     Route::get('/wallet', [GoldCoinController::class, 'index'])->name('wallet');
     Route::post('/wallet/pay', [CashfreeController::class, 'createOrder'])->name('wallet.pay');
-    Route::post('/price-window-gold/{pid}', [ProductController::class, 'goldcoin'])->middleware('auth');;
-    // Route::post('/price-window-two', [PriceController::class, 'hitSecondAPI']);
+    Route::post('/price-window-gold/{pid}', [ProductController::class, 'goldcoin'])->middleware('auth');
+    Route::post('/price-window-ads/{productId}', [ProductController::class, 'adsCoin']);
+    Route::post('/price-window-two', [ProductController::class, 'hitSecondAPI']);
+    Route::post('/use-purple-coin', [ProductController::class, 'usePurpleCoin']);
+    Route::get('/cashfree/return', [CashfreeController::class, 'return'])->name('cashfree.return');
+    Route::post('/cashfree/notify', [CashfreeController::class, 'notify'])->name('cashfree.notify');
 
-    Route::get('/cashfree/return', [CashfreeController::class, 'return'])
-        ->name('cashfree.return');
-
-    Route::post('/cashfree/notify', [CashfreeController::class, 'notify'])
-        ->name('cashfree.notify');
-
+    //ads routes
+    Route::post('/ads/click', [AdvertisementController::class, 'clickAd'])->name('ads.click');
     Route::get('/myproduct', function () {
         return view('myproduct');
     });
@@ -62,6 +61,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/order', function () {
         return view('order');
     });
+
+
+    Route::get('/ads/packages', [AdvertisementController::class, 'packages'])->name('ads.packages');
+    Route::get('/ads/index', [AdvertisementController::class, 'index'])->name('ads.index');
+    Route::get('/ads/create', [AdvertisementController::class, 'create'])->name('ads.create');
+    Route::post('/ads/store', [AdvertisementController::class, 'store'])->name('ads.store');
+    Route::post('/ads/pay', [AdvertisementController::class, 'pay'])->name('ads.pay');
+    Route::get('/ads/payment-return', [AdvertisementController::class, 'paymentReturn'])->name('ads.payment.return');
+    // Route::get('/ads/{id}', [AdvertisementController::class, 'show'])->name('ads.show');
+    Route::get('/ads/update/{id}', [AdvertisementController::class, 'edit'])->name('ads.edit');
+    Route::put('/ads/edit/{id}', [AdvertisementController::class, 'update'])->name('ads.update');
+    Route::delete('/ads/delete/{id}', [AdvertisementController::class, 'destroy'])->name('ads.destroy');
+
+
+    Route::get('/ads/dashboard', [AdvertisementController::class, 'adsdashboard'])->name('ads.dash');
+    Route::get('/show-ad/{slot}', [AdvertisementController::class, 'showAd'])
+        ->name('ads.showAd');
+    Route::get('/ads/{id}/analytics', [AdvertisementController::class, 'analytics'])
+        ->name('ads.analytics');
+    Route::post('/complete-task', [AdvertisementController::class, 'completeTask'])
+        ->name('ads.completeTask');
 
     // Route::get('about-us',[HomeController],'')->name();
     // Route::get('faq',[],'')->name();
@@ -96,8 +116,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/subcategorysave', [SubCategoryController::class, 'store'])->name('subcategories.store');
         Route::delete('/deletesubcat/{id}', [SubCategoryController::class, 'destroy'])->name('delete.subcat');
 
-        Route::post('/logout', [AdminAuthController::class, 'logout'])
-            ->name('admin.logout');
+        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
         // Points Package routes
         Route::resource('pointspackage', PackageController::class);

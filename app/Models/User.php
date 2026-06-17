@@ -11,11 +11,17 @@ class User extends Authenticatable
     use Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'phone', 'password', 'role', 'points'
+        'name',
+        'email',
+        'phone',
+        'password',
+        'role',
+        'points'
     ];
 
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
+        'remember_token',
     ];
 
     protected $casts = [
@@ -45,5 +51,15 @@ class User extends Authenticatable
     public function isSubExecutive()
     {
         return $this->role === 'subexecutive';
+    }
+
+    public function adClicks()
+    {
+        return $this->hasMany(AdClick::class, 'buyer_id');
+    }
+
+    public function adSlots()
+    {
+        return $this->hasMany(BuyerAdSlot::class, 'buyer_id');
     }
 }
