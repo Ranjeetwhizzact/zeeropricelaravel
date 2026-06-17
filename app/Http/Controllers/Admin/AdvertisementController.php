@@ -341,6 +341,7 @@ class AdvertisementController extends Controller
             'is_reward_given' => 0
         ]);
 
+
         BuyerAdSlot::create([
             'buyer_id' => $buyer_id,
             'ad_id' => $request->ad_id
